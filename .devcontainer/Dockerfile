@@ -1,43 +1,48 @@
-# Utiliser une image de base légère comme Alpine
-FROM mcr.microsoft.com/vscode/devcontainers/base:alpine-3.16
+# Utiliser une image de base légère comme Ubuntu
+FROM ubuntu:22.04
 
-# Installer Docker CLI, Docker Compose, et d'autres dépendances
-RUN apk add --no-cache \
-    docker-cli \
-    docker-compose \
+# Installer les dépendances de base
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    gnupg \
+    apt-transport-https \
+    software-properties-common \
+    openjdk-11-jdk \
     nginx \
-    nodejs \
-    npm
+    && rm -rf /var/lib/apt/lists/*
 
-# Installation de ElasticSearch, Logstash et Kibana
-RUN apk add --no-cache openjdk11 && \
-    mkdir -p /usr/share/elasticsearch && \
-    mkdir -p /usr/share/logstash && \
-    mkdir -p /usr/share/kibana
-
-# Installation de ElasticSearch
+# Installer Elasticsearch
 ENV ES_VERSION=7.17.12
-RUN wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$ES_VERSION-linux-x86_64.tar.gz && \
-    tar -xzf elasticsearch-$ES_VERSION-linux-x86_64.tar.gz -C /usr/share/elasticsearch --strip-components=1 && \
-    rm elasticsearch-$ES_VERSION-linux-x86_64.tar.gz
+RUN wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$ES_VERSION-amd64.deb && \
+    dpkg -i elasticsearch-$ES_VERSION-amd64.deb && \
+    rm elasticsearch-$ES_VERSION-amd64.deb
 
-# Installation de Logstash
+# Installer Logstash
 ENV LOGSTASH_VERSION=7.17.12
-RUN wget https://artifacts.elastic.co/downloads/logstash/logstash-$LOGSTASH_VERSION-linux-x86_64.tar.gz && \
-    tar -xzf logstash-$LOGSTASH_VERSION-linux-x86_64.tar.gz -C /usr/share/logstash --strip-components=1 && \
-    rm logstash-$LOGSTASH_VERSION-linux-x86_64.tar.gz
+RUN wget https://artifacts.elastic.co/downloads/logstash/logstash-$LOGSTASH_VERSION-amd64.deb && \
+    dpkg -i logstash-$LOGSTASH_VERSION-amd64.deb && \
+    rm logstash-$LOGSTASH_VERSION-amd64.deb
 
-# Installation de Kibana
+# Installer Kibana
 ENV KIBANA_VERSION=7.17.12
-RUN wget https://artifacts.elastic.co/downloads/kibana/kibana-$KIBANA_VERSION-linux-x86_64.tar.gz && \
-    tar -xzf kibana-$KIBANA_VERSION-linux-x86_64.tar.gz -C /usr/share/kibana --strip-components=1 && \
-    rm kibana-$KIBANA_VERSION-linux-x86_64.tar.gz
+RUN wget https://artifacts.elastic.co/downloads/kibana/kibana-$KIBANA_VERSION-amd64.deb && \
+    dpkg -i kibana-$KIBANA_VERSION-amd64.deb && \
+    rm kibana-$KIBANA_VERSION-amd64.deb
 
-# Configurer les chemins
-ENV PATH="/usr/share/elasticsearch/bin:/usr/share/logstash/bin:/usr/share/kibana/bin:${PATH}"
+# Configurer NGINX
+COPY ./web/nginx.conf /etc/nginx/nginx.conf
+COPY ./web/index.html /usr/share/nginx/html/index.html
 
-# Expose Ports
-EXPOSE 80 5601 9200 9300
+# Configurer Logstash
+COPY ./elk/logstash/logstash.conf /etc/logstash/conf.d/logstash.conf
 
-# Démarrage de l'ELK Stack
-CMD service nginx start && /usr/share/elasticsearch/bin/elasticsearch & /usr/share/logstash/bin/logstash -f /workspace/elk/logstash/logstash.conf & /usr/share/kibana/bin/kibana
+# Exposer les ports
+EXPOSE 80 9200 9300 5601 5000
+
+# Démarrage automatique des services lors de l'exécution du conteneur
+CMD service elasticsearch start && \
+    service logstash start && \
+    service kibana start && \
+    service nginx start && \
+    tail -f /dev/null
