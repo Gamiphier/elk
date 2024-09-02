@@ -1,16 +1,18 @@
 {
-    "name": "Web & ELK Dev Container",
+    "name": "ELK & Web Dev Container",
     "dockerFile": "Dockerfile",
-    "appPort": [80, 9200, 9300, 5601],
+    "appPort": ["80:80", "9200:9200", "5601:5601"],
     "runArgs": ["--privileged"],
 
     "settings": {
-        "terminal.integrated.shell.linux": "/bin/sh"
+        "terminal.integrated.shell.linux": "/bin/bash"
     },
 
     "extensions": [
         "ms-azuretools.vscode-docker"
     ],
 
-    "postCreateCommand": "docker-compose -f /workspace/elk/docker-compose.yml up -d"
+    "postCreateCommand": "echo 'Services are ready!'",
+    
+    "remoteUser": "vscode"
 }
