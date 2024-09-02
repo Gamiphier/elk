@@ -30,11 +30,9 @@ RUN wget https://artifacts.elastic.co/downloads/kibana/kibana-$KIBANA_VERSION-am
     dpkg -i kibana-$KIBANA_VERSION-amd64.deb && \
     rm kibana-$KIBANA_VERSION-amd64.deb
 
-# Configurer NGINX
+# Copier les fichiers de configuration dans les bons emplacements
 COPY ./web/nginx.conf /etc/nginx/nginx.conf
 COPY ./web/index.html /usr/share/nginx/html/index.html
-
-# Configurer Logstash
 COPY ./elk/logstash/logstash.conf /etc/logstash/conf.d/logstash.conf
 
 # Exposer les ports
